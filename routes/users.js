@@ -1,10 +1,37 @@
 import express from "express";
-import { getUsers, insertDados } from "../controllers/user.js";
+import {
+  getEstabelecimentos,
+  creatEstabelicimento,
+  getcustomers,
+  updateStatus,
+  getCategorias,
+  getUserByLoginAndPassword,
+  getRoles,
+  filterCategory,
+  editCustomer,
+  getCustomerById,
+  getcustomersByPage,
+  getStatus,
+  getProfilePicture,
+  editProfilePicture
+} from "../controllers/user.js";
 
 const router = express.Router();
 
-router.get("/get", getUsers);
-router.post("/insert", insertDados);
+router.get("/getEstabelecimentos", getEstabelecimentos);
+router.post("/creatEstabelicimento", creatEstabelicimento);
+router.get("/getcustomers", getcustomers);
+router.get("/getcustomersById/:id", getCustomerById);
+router.put("/deleteCustomer", updateStatus);
+router.get("/getCategorias", getCategorias);
+router.get("/getRoles", getRoles)
+router.post("/getUserByLoginAndPassword", getUserByLoginAndPassword)
+router.post("/filterCategory", filterCategory)
+router.put("/editCustomer", editCustomer);
+router.get("/getcustomersByPage", getcustomersByPage);
+router.get("/getStatus/:id", getStatus);
+router.get("/getProfilePicture/:id", getProfilePicture)
+router.put("/editProfilePicture", editProfilePicture);
 
 
 export default router;
