@@ -1,4 +1,5 @@
 import { db } from "../db.js";
+import sharp from 'sharp';
 
 export const getEstabelecimentos = (_, res) => {
   const q = "SELECT * FROM estabelecimentos";
@@ -223,6 +224,7 @@ export const editCustomer = (req, res) => {
   );
 };
 
+
 export const editProfilePicture = (req, res) => {
   const { id, iconPerfil } = req.body;
 
@@ -243,6 +245,138 @@ export const editProfilePicture = (req, res) => {
     return res.status(200).json({ message: "Dados atualizados com sucesso" });
   });
 };
+
+export const editPhotos = (req, res) => {
+  const { id, fotos } = req.body;
+
+  // Verifica se o cliente já existe
+  const checkCustomerQuery = `
+    SELECT * FROM base64
+    WHERE customer_id = ?
+  `;
+
+  db.query(checkCustomerQuery, [id], (checkErr, checkResult) => {
+    if (checkErr) {
+      console.error("Erro ao verificar se o cliente existe:", checkErr);
+      res.status(500).json({ error: "Erro interno ao verificar cliente." });
+    } else {
+      if (checkResult.length > 0) {
+        updateImages(id, fotos, checkResult, res);
+      } else {
+        insertNewCustomer(id, fotos, res);
+      }
+    }
+  });
+};
+
+const updateImages = (customerId, images, checkResult, res) => {
+  for (let i = 0; i < images.length; i++) {
+    const imageBase64 = images[i];
+
+    if (imageBase64) {
+      // Comprimir a imagem antes de salvar
+      sharp(Buffer.from(imageBase64, 'base64'))
+        .resize({ width: 800, height: 600 }) // Ajuste as dimensões conforme necessário
+        .toBuffer()
+        .then(compressedImageBuffer => {
+          const compressedImageBase64 = compressedImageBuffer.toString('base64');
+          // Restante do seu código de atualização aqui usando compressedImageBase64
+        })
+        .catch(error => {
+          console.error(`Erro ao comprimir a imagem ${i + 1}:`, error);
+          res.status(500).json({ error: "Erro interno ao atualizar imagens." });
+        });
+    }
+  }
+
+  res.status(200).json({ message: "Imagens atualizadas com sucesso." });
+};
+
+// ... (seu código existente)
+
+const insertNewCustomer = (customerId, images, res) => {
+  const compressedImages = [];
+
+  // Comprimir todas as imagens antes de salvar
+  Promise.all(
+    images.map(imageBase64 =>
+      sharp(Buffer.from(imageBase64, 'base64'))
+        .resize({ width: 800, height: 600 }) // Ajuste as dimensões conforme necessário
+        .toBuffer()
+    )
+  )
+    .then(compressedImageBuffers => {
+      compressedImageBuffers.forEach(buffer => {
+        compressedImages.push(buffer.toString('base64'));
+      });
+
+      // Construir a string de marcadores de posição para a consulta SQL
+      const placeholders = compressedImages.map(() => '?').join(', ');
+
+      // Construir a consulta SQL
+      const insertQuery = `
+        INSERT INTO base64 (customer_id, ${compressedImages.map((_, index) => `image${index + 1}`).join(", ")})
+        VALUES (?, ${placeholders})
+      `;
+
+      // Construir os valores para a consulta SQL
+      const insertValues = [customerId, ...compressedImages];
+
+      // Executar a consulta SQL
+      db.query(insertQuery, insertValues, (insertErr, insertResult) => {
+        if (insertErr) {
+          console.error("Erro ao inserir novo cliente no banco de dados:", insertErr);
+          res.status(500).json({ error: "Erro interno ao inserir novo cliente." });
+        } else {
+          console.log(`Novo cliente e imagens inseridos com sucesso.`);
+          res.status(200).json({ message: "Imagens salvas com sucesso." });
+        }
+      });
+    })
+    .catch(error => {
+      console.error("Erro ao comprimir imagens:", error);
+      res.status(500).json({ error: "Erro interno ao inserir novo cliente." });
+    });
+};
+
+// ... (seu código existente)
+
+
+export const getFotos = (req, res) => {
+  const id = req.params.id;
+
+  const q = `
+    SELECT *
+    FROM base64
+    WHERE customer_id = ?
+  `;
+
+  db.query(q, [id], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Erro interno do servidor" });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Estabelecimento não encontrado" });
+    }
+
+    const { customer_id, ...images } = result[0];
+    const fotosArray = [];
+
+    for (let i = 1; i <= 9; i++) {
+      const columnName = `image${i}`;
+      const imageBase64 = images[columnName];
+
+      if (imageBase64) {
+        fotosArray.push(imageBase64);
+      }
+    }
+
+    res.status(200).json(fotosArray);
+  });
+};
+
 
 export const getCategorias = (_, res) => {
   const q = "SELECT tipos FROM categorias;";

@@ -13,7 +13,9 @@ import {
   getcustomersByPage,
   getStatus,
   getProfilePicture,
-  editProfilePicture
+  editProfilePicture,
+  editPhotos,
+  getFotos
 } from "../controllers/user.js";
 
 const router = express.Router();
@@ -32,6 +34,7 @@ router.get("/getcustomersByPage", getcustomersByPage);
 router.get("/getStatus/:id", getStatus);
 router.get("/getProfilePicture/:id", getProfilePicture)
 router.put("/editProfilePicture", editProfilePicture);
-
+router.put("/editPhotos/", editPhotos);
+router.get("/getFotos/:id", getFotos)
 
 export default router;
